@@ -1,5 +1,5 @@
-
-
+import os
+from flask import Flask
 import sqlite3
 from html import escape
 
@@ -770,6 +770,17 @@ def main():
     app.run_polling()
 
 
+flask_app = Flask(__name__)
+
+@flask_app.route('/')
+def home():
+    return "Bot is running"
+
+import threading
+def run_flask():
+    flask_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
+threading.Thread(target=run_flask, daemon=True).start()
 if __name__ == "__main__":
     import asyncio
     asyncio.set_event_loop(asyncio.new_event_loop())
