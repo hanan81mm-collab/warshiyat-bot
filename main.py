@@ -1,4 +1,3 @@
-[bot.py](https://github.com/user-attachments/files/35344960/bot.py)
 
 
 import sqlite3
