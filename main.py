@@ -3,7 +3,7 @@ import sqlite3
 import threading
 from html import escape
 
-from flask import Flask
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
@@ -743,19 +743,6 @@ async def handle_buttons(update, context):
         return
 
 
-# =========================
-# سيرفر صغير باش الموقع ما يرقدش
-# =========================
-flask_app = Flask(__name__)
-
-@flask_app.route("/")
-def home():
-    return "🌿 بوت ورشيات طريق التوبة يعمل الآن..."
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    flask_app.run(host="0.0.0.0", port=port)
-
 
 # =========================
 # تشغيل البوت
@@ -769,8 +756,6 @@ def main():
 
     init_db()
 
-    # نشغل سيرفر الويب في الخلفية باش Koyeb / Render يعرفو بلي البوت حي
-    threading.Thread(target=run_flask, daemon=True).start()
 
     app = Application.builder().token(TOKEN).build()
 
