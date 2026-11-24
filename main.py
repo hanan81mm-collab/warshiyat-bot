@@ -14,7 +14,7 @@ from telegram.ext import (
 )
 
 # ضعي رمز البوت من BotFather هنا
-TOKEN = "9071085071:AAHS7wAmITBYB-RB5mjSbqFL60ZxUgm3jZc"
+TOKEN = "9130779328:AAFGfsAthcDRcAutSr92VgpWGvS9AKLlQAY"
 
 DB = "warshiyat.db"
 ACADEMY = "🌿 ورشيات طريق التوبة 🌿"
