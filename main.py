@@ -1,3 +1,22 @@
+from flask import Flask
+from threading import Thread
+import os as _os_for_port
+
+app_web = Flask(__name__)
+
+@app_web.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_web():
+    port = int(_os_for_port.environ.get("PORT", 8080))
+    app_web.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
+keep_alive()
 import os
 from flask import Flask
 import sqlite3
