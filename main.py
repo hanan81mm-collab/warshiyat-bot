@@ -49,9 +49,7 @@ def connect():
 
 def init_db():
     with connect() as con:
-                cols = [r[1] for r in con.execute("PRAGMA table_info(reading_lists)").fetchall()]
-                if cols and "thread_id" not in cols:
-                     con.execute("ALTER TABLE reading_lists ADD COLUMN thread_id INTEGER DEFAULT 0")
+        
                 con.execute("""
             CREATE TABLE IF NOT EXISTS reading_lists (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
