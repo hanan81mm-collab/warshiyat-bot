@@ -62,12 +62,7 @@ def init_db():
             )
         """)
 
-        columns = [
-            row[1]
-            for row in con.execute(
-                "PRAGMA table_info(queue_members)"
-            ).fetchall()
-        ]
+        columns = [r[1]]  for r in con.execute("PRAGMA table_info(queue_members)").fetchall()]
 
         # ترحيل بيانات الكود القديم دون حذف الأسماء
         if columns and "list_id" not in columns:
