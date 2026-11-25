@@ -49,10 +49,14 @@ def connect():
 
 def init_db():
     with connect() as con:
-        con.execute("""
+                cols = [r[1] for r in con.execute("PRAGMA table_info(reading_lists)").fetchall()]
+                if cols and "thread_id" not in cols:
+                     con.execute("ALTER TABLE reading_lists ADD COLUMN thread_id INTEGER DEFAULT 0")
+                con.execute("""
             CREATE TABLE IF NOT EXISTS reading_lists (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id INTEGER NOT NULL,
+                thread_id INTEGER NOT NULL DEFAULT 0,
                 title TEXT NOT NULL,
                 is_open INTEGER NOT NULL DEFAULT 1,
                 is_active INTEGER NOT NULL DEFAULT 1,
@@ -127,30 +131,32 @@ def init_db():
             """)
 
 
-def get_active_list(chat_id):
+def get_active_list(chat_id, thread_id=0):
+    if thrad_id is None:
+        thread_id = 0
     with connect() as con:
         row = con.execute("""
             SELECT id, title, is_open, is_active
             FROM reading_lists
-            WHERE chat_id = ? AND is_active = 1
+            WHERE chat_id = ? AND thread_id = ? AND is_active = 1
             ORDER BY id DESC LIMIT 1
-        """, (chat_id,)).fetchone()
+        """, (chat_id, thread_id)).fetchone()
 
         if row:
             return row
 
         number = con.execute(
-            "SELECT COUNT(*) FROM reading_lists WHERE chat_id = ?",
-            (chat_id,)
+            "SELECT COUNT(*) FROM reading_lists WHERE chat_id = ? AND thread_id = ?",
+            (chat_id, thread_id),
         ).fetchone()[0] + 1
 
         title = f"قائمة ورشيات رقم {number}"
 
         con.execute("""
             INSERT INTO reading_lists
-            (chat_id, title, is_open, is_active)
-            VALUES (?, ?, 1, 1)
-        """, (chat_id, title))
+            (chat_id, thread_id, title, is_open, is_active)
+            VALUES (?, ?, ?, 1, 1)
+        """, (chat_id, thread_id, title))
 
         list_id = con.execute(
             "SELECT last_insert_rowid()"
@@ -358,7 +364,7 @@ async def refresh_panel(message, list_id):
         pass
 
 
-async def notify_current(context, list_id):
+async def notify_current(context, list_id, thread_id=0):
     current = get_current_reader(list_id)
 
     if not current:
@@ -383,7 +389,8 @@ async def notify_current(context, list_id):
                 f"🌹 حان دور القارئة التالية: {mention}\n"
                 "تفضّلي، ننتظر تلاوتكِ 🤍"
             ),
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            message_thread_id=thread_id if thread_id None
         )
     except TelegramError:
         pass
@@ -421,6 +428,7 @@ async def myid(update, context):
 
 async def post(update, context):
     chat_id = update.effective_chat.id
+    thread_id = update.message.message_thread_id or 0
 
     if not await is_group_admin(
         context, chat_id, update.effective_user.id
@@ -430,7 +438,7 @@ async def post(update, context):
         )
         return
 
-    list_id, title, is_open, active = get_active_list(chat_id)
+    list_id, title, is_open, active = get_active_list(chat_id, thread_id)
 
     await update.message.reply_text(
         build_panel(list_id),
@@ -492,6 +500,7 @@ async def handle_buttons(update, context):
     query = update.callback_query
     user = query.from_user
     chat_id = query.message.chat_id
+    thread_id = query.message.message_thread_id or 0
 
     try:
         action, list_id_text = query.data.split(":")
@@ -572,7 +581,7 @@ async def handle_buttons(update, context):
             current = get_current_reader(list_id)
 
             if current and current[0] == user.id:
-                await notify_current(context, list_id)
+                await notify_current(context, list_id thread_id)
 
         return
 
@@ -606,7 +615,7 @@ async def handle_buttons(update, context):
         await refresh_panel(query.message, list_id)
 
         if row[0] == "قارئة" and row[1] == "waiting":
-            await notify_current(context, list_id)
+            await notify_current(context, list_id thread_id)
 
         return
 
@@ -644,7 +653,7 @@ async def handle_buttons(update, context):
         )
 
         await refresh_panel(query.message, list_id)
-        await notify_current(context, list_id)
+        await notify_current(context, list_id thread_id)
         return
 
     # التحقق من صلاحيات المشرفة
@@ -690,7 +699,7 @@ async def handle_buttons(update, context):
         )
 
         await refresh_panel(query.message, list_id)
-        await notify_current(context, list_id)
+        await notify_current(context, list_id thread_id)
         return
 
     # إغلاق القائمة
@@ -727,21 +736,21 @@ async def handle_buttons(update, context):
             con.execute("""
                 UPDATE reading_lists
                 SET is_active = 0
-                WHERE chat_id = ? AND is_active = 1
-            """, (chat_id,))
+               WHERE chat_id = ? AND thread_id = ? AND is_active = 1
+            """, (chat_id, thread_id))
 
             number = con.execute("""
                 SELECT COUNT(*) FROM reading_lists
-                WHERE chat_id = ?
-            """, (chat_id,)).fetchone()[0] + 1
+                WHERE chat_id = ? AND thread_id = ?
+            """, (chat_id, thread_id)).fetchone()[0] + 1
 
             new_title = f"قائمة ورشيات رقم {number}"
 
             con.execute("""
                 INSERT INTO reading_lists
-                (chat_id, title, is_open, is_active)
-                VALUES (?, ?, 1, 1)
-            """, (chat_id, new_title))
+              (chat_id, thread_id, title, is_open, is_active)
+VALUES (?, ?, ?, 1, 1)
+            """, (chat_id, thread_id, new_title))
 
             new_id = con.execute(
                 "SELECT last_insert_rowid()"
