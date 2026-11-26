@@ -8,7 +8,7 @@ from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
-TOKEN = "9071085071:AAHS7wAmITBYB-RB5mjSbqFL60ZxUgm3jZc"
+TOKEN = os.environ.get("TOKEN" , "")
 DB = "bot.db"
 ACADEMY = "أكاديمية ورشيات طريق التوبة"
 
